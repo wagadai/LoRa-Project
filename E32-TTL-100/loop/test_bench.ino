@@ -11,10 +11,10 @@ void test_bench() {
   #endif
 
   #ifdef E32_TTL_100_TEST
-  E32_LoRa_setup_test();
-  E32_LoRa_send_test();
-  E32_LoRa_listen_test();
-  E32_LoRa_fetch_test();
+  _E32_LoRa_setup_test();
+  _E32_LoRa_send_test();
+  _E32_LoRa_listen_test();
+  _E32_LoRa_fetch_test();
   #endif
 }
 /*******************************************************************
@@ -29,10 +29,19 @@ void RREQ_message_test(){
   struct RREQ_message* RREQ;
   RREQ->broadcast_id = 0x11;  Serial.print(RREQ->broadcast_id, HEX);
   RREQ->dest_addr = 0x22;     Serial.print(RREQ->dest_addr, HEX);
-  RREQ->dest_seq_no = 0x33;   Serial.print( RREQ->dest_seq_no, HEX);
+  RREQ->dest_seq_no = 0x33;   Serial.print(RREQ->dest_seq_no, HEX);
   RREQ->source_addr = 0x44;   Serial.print(RREQ->source_addr, HEX);
   RREQ->source_seq_no = 0x55; Serial.print(RREQ->source_seq_no, HEX);
   RREQ->hop_count = 0x66;     Serial.println(RREQ->hop_count, HEX);
+
+  // Copy another_array & RREQ to frame_to_send:
+  uint8_t frame_to_send[8];
+  uint8_t another_array[] = {0xAA, 0xBB, 0xCC};
+  memcpy(frame_to_send, another_array, sizeof(another_array));
+  memcpy(frame_to_send + sizeof(another_array), RREQ, sizeof(struct RREQ_message));
+  Serial.print("TEST: frame_to_send:");
+  Serial.println(frame_to_send[7], HEX);
+
   Serial.println("TEST: Test RREQ_message_test done!");
 }
 
@@ -79,27 +88,27 @@ void routing_table_test(){
 /*******************************************************************
  * E32_TTL_100 LORA
 ********************************************************************/
-void E32_LoRa_setup_test() {
-  Serial.println("TEST: Testing E32_LoRa_setup_test....");
-  if (E32_LoRa_setup()) {
-    Serial.println("TEST: E32_LoRa_setup_test OK!");
+void _E32_LoRa_setup_test() {
+  Serial.println("TEST: Testing _E32_LoRa_setup_test....");
+  if (_E32_LoRa_setup()) {
+    Serial.println("TEST: _E32_LoRa_setup_test OK!");
     return;
   }
-  Serial.println("TEST: E32_LoRa_setup_test ERROR!");
+  Serial.println("TEST: _E32_LoRa_setup_test ERROR!");
 }
 
-void E32_LoRa_send_test() {
-  Serial.println("TEST: Testing E32_LoRa_send_test....");
+void _E32_LoRa_send_test() {
+  Serial.println("TEST: Testing _E32_LoRa_send_test....");
   
 }
 
-void E32_LoRa_listen_test() {
+void _E32_LoRa_listen_test() {
   Serial.println("TEST: Testing E32_LoRa_listen_test....");
   
 }
 
 void E32_LoRa_fetch_test() {
-  Serial.println("TEST: Testing E32_LoRa_fetch_test....");
+  Serial.println("TEST: Testing _E32_LoRa_fetch_test....");
   
 }
 /*******************************************************************

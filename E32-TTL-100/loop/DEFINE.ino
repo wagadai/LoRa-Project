@@ -1,9 +1,9 @@
 /*******************************************************************
  * TEST_BENCH
 ********************************************************************/
-//#define TEST_BENCH
+#define TEST_BENCH
 
-//#define MESSAGE_TEST
+#define MESSAGE_TEST
 //#define E32_TTL_100_TEST
 /*******************************************************************
  * EEPROM
@@ -19,6 +19,11 @@
 /*******************************************************************
  * ADOV_PROTOCOL
 ********************************************************************/
+#define   RREQ_MESSAGE_TYPE 0x01
+#define   RREP_MESSAGE_TYPE 0x02
+#define   RERR_MESSAGE_TYPE 0x03
+#define   DATA_MESSAGE_TYPE 0x04
+
 struct RREQ_message {
   uint8_t broadcast_id;   // broadcast id
   uint8_t dest_addr;      //  destination address

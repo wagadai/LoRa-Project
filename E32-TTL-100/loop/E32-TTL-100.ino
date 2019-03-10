@@ -4,7 +4,7 @@
 #define HEADER          0xC0
 #define NODE_AddressH   0xBB
 #define NODE_AddressL   0x11
-#define NODE_Channel    0x17
+#define CHANNEL    0x17
 #define SPEED           0x1D  // 19.2 KBPS
 #define OPTION          0xC4  //20dBm
 
@@ -18,11 +18,13 @@
 /************************* GLOBAL VARIABLE *****************************/
 SoftwareSerial LoraSerial(SOFT_RX, SOFT_TX);
 
-/************************* PUBLIC FUNCTIONS *****************************/
+//==================================================================//
+//====================== PRIVATE FUNCTIONS =========================*/
+//==================================================================//
 /*******************************************************************
- * E32_LoRa_setup()
+ * _E32_LoRa_setup()
 ********************************************************************/
-bool E32_LoRa_setup() {
+bool _E32_LoRa_setup() {
   Serial.println("E32-TTL-100: Configuring.......!");
   pinMode(M0pin, OUTPUT);
   pinMode(M1pin, OUTPUT);
@@ -34,10 +36,10 @@ bool E32_LoRa_setup() {
   digitalWrite(M0pin, HIGH);
   digitalWrite(M1pin, HIGH);
   delay(10);
-  if(_wait_AUX_high() == TIMEOUT_RET) {exit(0);}
-  uint8_t CMD[6] = {HEADER, NODE_AddressH, NODE_AddressL, SPEED, NODE_Channel, OPTION};
+  if(__wait_AUX_high() == TIMEOUT_RET) {exit(0);}
+  uint8_t CMD[6] = {HEADER, NODE_AddressH, NODE_AddressL, SPEED, CHANNEL, OPTION};
   LoraSerial.write(CMD, 6);
-  _wait_AUX_high();
+  __wait_AUX_high();
   delay(1200);
   Serial.println("E32-TTL-100: Setting Configure has been sent!");
 
@@ -45,7 +47,7 @@ bool E32_LoRa_setup() {
   while(LoraSerial.available()){LoraSerial.read();} //Clean Uart Buffer
   uint8_t READCMD[3] = {0xC1, 0xC1, 0xC1};
   LoraSerial.write(READCMD, 3);
-  _wait_AUX_high();
+  __wait_AUX_high();
   delay(50);
   Serial.println("E32-TTL-100: Reading Configure has been sent!");
   uint8_t readbuf[6];
@@ -65,7 +67,7 @@ bool E32_LoRa_setup() {
       Serial.print("Option: ");Serial.println(0xFF & readbuf[5],HEX);
 
       if ((readbuf[0] == HEADER) && (readbuf[1] == NODE_AddressH ) && (readbuf[2] == NODE_AddressL )  
-                    && (readbuf[3] == SPEED) && (readbuf[4] == NODE_Channel ) && (readbuf[5] == OPTION) ) {
+                    && (readbuf[3] == SPEED) && (readbuf[4] == CHANNEL) && (readbuf[5] == OPTION) ) {
           digitalWrite(M0pin, LOW);
           digitalWrite(M1pin, LOW);
           Serial.println("E32-TTL-100: Mode 0: Normal: Ready...!");
@@ -76,9 +78,9 @@ bool E32_LoRa_setup() {
   return false;
 }
 /*******************************************************************
- * E32_LoRa_send()
+ * _E32_LoRa_send()
 ********************************************************************/
-void E32_LoRa_send(uint8_t *payload, uint8_t nb_byte) {
+void _E32_LoRa_send(uint8_t *payload, uint8_t nb_byte) {
     // uint8_t FrameSend[8] = {GW_AddressH, GW_AddressL, GW_Channel, NODE_AddressH, NODE_AddressL, 0x01, 0x02, 0x03};
 //    LoraSerial.write(payload, nb_byte);
 //    #ifdef DEBUG_SERIAL
@@ -91,41 +93,46 @@ void E32_LoRa_send(uint8_t *payload, uint8_t nb_byte) {
 /*******************************************************************
  * E32_LoRa_listen()
 ********************************************************************/
-int E32_LoRa_listen() {
-//    delay(100);
-//    int data_len;
-//    data_len = LoraSerial.available();
-//    if (data_len > 0) {
-//        #ifdef DEBUG_SERIAL
-//        Serial.print("ReceiveMsg: ");  Serial.print(data_len);  Serial.println(" bytes.");
-//        #endif // DEBUG_SERIAL
-//        ledToggle(1, false, true, 500);
-//    }
-//    return data_len;
+uint8_t _E32_LoRa_listen(uint8_t *message_received) {
+  uint8_t message_length = 0;
+  
+  message_length = LoraSerial.available();
+  if (message_length > 0) {
+    // Fetch received packet
+    Serial.print("E32_TTL_100: Receive message: ");  Serial.print(message_length);  Serial.println(" bytes.");
+    Serial.print("E32_TTL_100: Message is: {");
+    for (int i=0; i < message_length; i++ ) {
+      *(message_received + i) = LoraSerial.read();
+      Serial.print(*(message_received + i)); Serial.print(", ");
+    }
+    Serial.println("}");
+  
+    // Check type of message: RREQ, RREP, RERR, data_message?
+    switch (*message_received) {
+      case RREQ_MESSAGE_TYPE:
+        Serial.println("E32_TTL_100: Receive RREQ_message");
+        return RREQ_MESSAGE_TYPE;
+      case RREP_MESSAGE_TYPE:
+        Serial.println("E32_TTL_100: Receive RREP_message");
+        return RREP_MESSAGE_TYPE;
+      case RERR_MESSAGE_TYPE:
+        Serial.println("E32_TTL_100: Receive RERR_message");
+        return RERR_MESSAGE_TYPE;
+      case DATA_MESSAGE_TYPE:
+        Serial.println("E32_TTL_100: Receive data_message");
+        return DATA_MESSAGE_TYPE;
+      default:
+        Serial.println("E32_TTL_100: ERROR");
+        return 0x00;
+    }
+  }
+  return 0x00; // NOT RECEIVE ANY PACKET
 }
 
 /*******************************************************************
- * E32_LoRa_fetch()
+ * __read_AUX()
 ********************************************************************/
-void E32_LoRa_fetch(int data_len, uint8_t *pdata) {
-//  if (data_len > 0) {
-//      for(int i=0;i<data_len;i++) {
-//          pdata[i] = LoraSerial.read();
-//          #ifdef DEBUG_SERIAL
-//          Serial.print(pdata[i]);
-//          Serial.print(" ");
-//          #endif // DEBUG_SERIAL
-//      }
-//      #ifdef DEBUG_SERIAL
-//      Serial.println("");
-//      #endif // DEBUG_SERIAL
-//  }
-}
-/*********************** PRIVATE FUNCTIONS *****************************/
-/*******************************************************************
- * _read_AUX()
-********************************************************************/
-bool _read_AUX() {
+bool __read_AUX() {
   bool AUX_value;
   int val = analogRead(AUXpin);
   if(val<50){
@@ -136,12 +143,12 @@ bool _read_AUX() {
   return AUX_value;
 }
 /*******************************************************************
- * _wait_AUX_high()
+ * __wait_AUX_high()
 ********************************************************************/
-int _wait_AUX_high() {
+int __wait_AUX_high() {
   int ret_var = 0;
   uint8_t cnt = 0;
-  while ((_read_AUX() == LOW) && (cnt++ < 100)){
+  while ((__read_AUX() == LOW) && (cnt++ < 100)){
       Serial.print(".");
       delay(100);
   }
@@ -150,4 +157,35 @@ int _wait_AUX_high() {
       Serial.println("E32-TTL-100: Timeout!");
   }
   return ret_var;
+}
+
+/*******************************************************************
+ * _E32_LoRa_send_broadcast()
+********************************************************************/
+void _E32_LoRa_send_broadcast(struct RREQ_message* RREQ) {
+  uint8_t broadcast_addr[3] = {0xFF, 0xFF, CHANNEL};
+  uint8_t frame_to_send[sizeof(struct RREQ_message) + sizeof(broadcast_addr)];
+  
+  memcpy(frame_to_send, broadcast_addr, sizeof(broadcast_addr));
+  memcpy(frame_to_send + sizeof(broadcast_addr), RREQ, sizeof(struct RREQ_message));
+  LoraSerial.write(frame_to_send, sizeof(frame_to_send));
+  delay(10);
+}
+
+//==================================================================//
+//====================== PUBLIC FUNCTIONS =========================*/
+//==================================================================//
+/*******************************************************************
+ * LoRa_broadcast()
+********************************************************************/
+void LoRa_broadcast(struct RREQ_message* RREQ) {
+  Serial.println("E32_TTL_100: Sending broadcast RREQ_message.....");
+  _E32_LoRa_send_broadcast(RREQ);
+  Serial.println("E32_TTL_100: RREQ_message has been sent!");
+}
+/*******************************************************************
+ * LoRa_listen()
+********************************************************************/
+uint8_t LoRa_listen(uint8_t *message) {
+  return _E32_LoRa_listen(message);
 }
