@@ -4,9 +4,9 @@
 void test_bench() {
   #ifdef MESSAGE_TEST
   RREQ_message_test();
-  RREP_message_test();
-  RERR_message_test();
-  routing_table_test();
+//  RREP_message_test();
+//  RERR_message_test();
+//  routing_table_test();
   while(1);
   #endif
 
@@ -22,69 +22,87 @@ void test_bench() {
 ********************************************************************/
 void RREQ_message_test(){
   Serial.println("TEST: Testing RREQ_message_test....");
-  if (sizeof(struct RREQ_message) != 6) {
+  Serial.println(sizeof(struct RREQ_message));
+  if (sizeof(struct RREQ_message) != 9) {
     Serial.println("TEST: ERROR: size of RREQ_message is not compatible");
     return;
   }
   struct RREQ_message* RREQ;
-  RREQ->broadcast_id = 0x11;  Serial.print(RREQ->broadcast_id, HEX);
-  RREQ->dest_addr = 0x22;     Serial.print(RREQ->dest_addr, HEX);
-  RREQ->dest_seq_no = 0x33;   Serial.print(RREQ->dest_seq_no, HEX);
-  RREQ->source_addr = 0x44;   Serial.print(RREQ->source_addr, HEX);
-  RREQ->source_seq_no = 0x55; Serial.print(RREQ->source_seq_no, HEX);
-  RREQ->hop_count = 0x66;     Serial.println(RREQ->hop_count, HEX);
+  memset(RREQ, 0, sizeof(struct RREQ_message));
+  RREQ->type = 0x73;       Serial.print(RREQ->type, HEX);
+  RREQ->dest.address_high = 0x22;     Serial.print(RREQ->dest.address_high, HEX);
+  RREQ->dest.address_low = 0x33;      Serial.print(RREQ->dest.address_low, HEX);
+  RREQ->dest.sequence_number = 0x44;  Serial.print(RREQ->dest.sequence_number, HEX);
+  RREQ->src.address_high = 0x55;      Serial.print(RREQ->src.address_high, HEX);
+  RREQ->src.address_low = 0x66;       Serial.print(RREQ->src.address_low, HEX);
+  RREQ->src.sequence_number = 0x77;   Serial.print(RREQ->src.sequence_number, HEX);
+  RREQ->hop_count = 0x66;             Serial.print(RREQ->hop_count, HEX);
+  RREQ->broadcast_id = 0x88;          Serial.println(RREQ->broadcast_id, HEX);
 
   // Copy another_array & RREQ to frame_to_send:
-  uint8_t frame_to_send[8];
+  uint8_t frame_to_send[sizeof(struct RREQ_message) + 3];
   uint8_t another_array[] = {0xAA, 0xBB, 0xCC};
   memcpy(frame_to_send, another_array, sizeof(another_array));
   memcpy(frame_to_send + sizeof(another_array), RREQ, sizeof(struct RREQ_message));
   Serial.print("TEST: frame_to_send:");
-  Serial.println(frame_to_send[7], HEX);
+  Serial.println(frame_to_send[4], HEX);
+
+  // Test copy 2 same-type struct
+  Serial.println("TEST: copy 2 same-type struct");
+  struct destination* dest;
+  dest->address_high = 0xAA;
+  dest->address_low = 0xBB;
+  dest->sequence_number = 0xCC;
+  
+  RREQ->dest = *dest;
+  Serial.print(RREQ->dest.address_high, HEX);
+  Serial.print(RREQ->dest.address_low, HEX);
+  Serial.println(RREQ->dest.sequence_number, HEX);
 
   Serial.println("TEST: Test RREQ_message_test done!");
+  
 }
 
-void RREP_message_test(){
-  Serial.println("TEST: Testing RREP_message_test....");
-  if (sizeof(struct RREP_message) != 5) {
-    Serial.println("TEST: ERROR: size of RREP_message is not compatible");
-    return;
-  }
-  struct RREP_message* RREP;
-  RREP->dest_addr = 0x11;     Serial.print(RREP->dest_addr, HEX);
-  RREP->dest_seq_no = 0x22;   Serial.print(RREP->dest_seq_no, HEX);
-  RREP->source_addr = 0x33;   Serial.print(RREP->source_addr, HEX);
-  RREP->source_seq_no = 0x44; Serial.print(RREP->source_seq_no, HEX);
-  RREP->hop_count = 0x55;     Serial.println(RREP->hop_count, HEX);
-  Serial.println("TEST: Test RREP_message done!");
-}
-
-void RERR_message_test(){
-  Serial.println("Testing RERR_message_test....");
-  if (sizeof(struct RERR_message) != 2) {
-    Serial.println("TEST: ERROR: size of RERR_message is not compatible");
-    return;
-  }
-  struct RERR_message* RERR;
-  RERR->dest_addr_unreachable = 0x11;   Serial.print(RERR->dest_addr_unreachable, HEX);
-  RERR->dest_seq_no_unreachable = 0x22; Serial.println(RERR->dest_seq_no_unreachable, HEX);
-  Serial.println("TEST: Test RERR_message done!");  
-}
-
-void routing_table_test(){
-  Serial.println("TEST: Testing routing_table....");
-  if (sizeof(struct routing_table) != 4) {
-    Serial.println("TEST: ERROR: size of routing_table is not compatible");
-    return;
-  }
-  struct routing_table* rt_tbl;
-  rt_tbl->node_addr = 0x11; Serial.print(rt_tbl->node_addr, HEX);
-  rt_tbl->next_hop = 0x22;  Serial.print(rt_tbl->next_hop, HEX);
-  rt_tbl->seq_no = 0x33;    Serial.print(rt_tbl->seq_no, HEX);
-  rt_tbl->hop_count = 0x44; Serial.println(rt_tbl->hop_count, HEX);
-  Serial.println("TEST: Test routing_table done!");  
-}
+//void RREP_message_test(){
+//  Serial.println("TEST: Testing RREP_message_test....");
+//  if (sizeof(struct RREP_message) != 6) {
+//    Serial.println("TEST: ERROR: size of RREP_message is not compatible");
+//    return;
+//  }
+//  struct RREP_message* RREP;
+//  RREP->dest_addr = 0x11;     Serial.print(RREP->dest_addr, HEX);
+//  RREP->dest_seq_no = 0x22;   Serial.print(RREP->dest_seq_no, HEX);
+//  RREP->source_addr = 0x33;   Serial.print(RREP->source_addr, HEX);
+//  RREP->source_seq_no = 0x44; Serial.print(RREP->source_seq_no, HEX);
+//  RREP->hop_count = 0x55;     Serial.println(RREP->hop_count, HEX);
+//  Serial.println("TEST: Test RREP_message done!");
+//}
+//
+//void RERR_message_test(){
+//  Serial.println("Testing RERR_message_test....");
+//  if (sizeof(struct RERR_message) != 3) {
+//    Serial.println("TEST: ERROR: size of RERR_message is not compatible");
+//    return;
+//  }
+//  struct RERR_message* RERR;
+//  RERR->dest_addr_unreachable = 0x11;   Serial.print(RERR->dest_addr_unreachable, HEX);
+//  RERR->dest_seq_no_unreachable = 0x22; Serial.println(RERR->dest_seq_no_unreachable, HEX);
+//  Serial.println("TEST: Test RERR_message done!");  
+//}
+//
+//void routing_table_test(){
+//  Serial.println("TEST: Testing routing_table....");
+//  if (sizeof(struct routing_table) != 4) {
+//    Serial.println("TEST: ERROR: size of routing_table is not compatible");
+//    return;
+//  }
+//  struct routing_table* rt_tbl;
+//  rt_tbl->node_addr = 0x11; Serial.print(rt_tbl->node_addr, HEX);
+//  rt_tbl->next_hop = 0x22;  Serial.print(rt_tbl->next_hop, HEX);
+//  rt_tbl->seq_no = 0x33;    Serial.print(rt_tbl->seq_no, HEX);
+//  rt_tbl->hop_count = 0x44; Serial.println(rt_tbl->hop_count, HEX);
+//  Serial.println("TEST: Test routing_table done!");  
+//}
 /*******************************************************************
  * E32_TTL_100 LORA
 ********************************************************************/

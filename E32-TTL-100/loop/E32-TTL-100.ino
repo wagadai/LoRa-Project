@@ -121,6 +121,9 @@ uint8_t _E32_LoRa_listen(uint8_t *message_received) {
       case DATA_MESSAGE_TYPE:
         Serial.println("E32_TTL_100: Receive data_message");
         return DATA_MESSAGE_TYPE;
+//      case ACK_MESSAGE_TYPE:
+//        Seria.println("E32_TTL_100: Receive ack_message");
+//        return ACK_MESSAGE_TYPE;
       default:
         Serial.println("E32_TTL_100: ERROR");
         return 0x00;

@@ -1,0 +1,12 @@
+03/11/2019:
+	Received RREQ:
+		- check if reversed path (ACK)
+		- check if duplicate (received_broadcast_table[])
+		- update received_broadcast_table
+		[TODO]- check if destination -> yes, unicast RREP	
+		- check if destination -> no:
+			+ TODO: UNICAST ACK TO SENDER
+			+ update routing table
+			+ rebroadcast: hop_count++; sender_address: changed
+		
+		
