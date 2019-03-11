@@ -33,6 +33,7 @@ void aodv_protocol(){
  * broadcast_RREQ()
 ********************************************************************/
 void broadcast_RREQ(struct destination* dest) {
+  Serial.println("AODV_PROTOCOL: Sending RREQ_broadcast message.....");
   // unknown sequence_number of destination: NaN = 255;
   dest->sequence_number = 255;
 
@@ -42,14 +43,43 @@ void broadcast_RREQ(struct destination* dest) {
   RREQ->src = *src;
   RREQ->broadcast_id = broadcast_id++;
   RREQ->hop_count = 0;
+
+  // convert struct to array
+  uint8_t _message[sizeof(struct RREQ_message)];
+  memcpy(_message, RREQ, sizeof(struct RREQ_message));
   
   // broadcast RREQ_message
-  LoRa_broadcast(RREQ);
+  LoRa_broadcast(_message);
+  Serial.println("AODV_PROTOCOL: broadcast RREQ_broadcast message has been sent!");
 
   // wait for RREP/ ACK
   listen_message();
 }
+/*******************************************************************
+ * unicast_RREQ_ACK(): reversed_path
+********************************************************************/
+void unicast_RREQ_ACK(struct RREQ_message* _RREQ) {
+  Serial.print("AODV_PROTOCOL: Unicasting RREQ_ACK message to: ");
+  _RREQ->reverse_path = REVERSE_PATH;
+  struct send_address* send_to;
+  send_to->address_high = _RREQ->send_from.address_high;  Serial.print(send_to->address_high, HEX);
+  send_to->address_low = _RREQ->send_from.address_low;    Serial.println(send_to->address_low, HEX);
 
+  // convert struct to array
+  uint8_t _message[sizeof(struct RREQ_message)];
+  memcpy(_message, _RREQ, sizeof(struct RREQ_message));
+  LoRa_unicast(send_to, _message);
+  Serial.println("AODV_PROTOCOL: Unicast RREQ_ACK message DONE! ");
+}
+/*******************************************************************
+ * unicast_RREP()
+********************************************************************/
+void unicast_RREP() {
+  // TODO
+}
+/*******************************************************************
+ * listen_message()
+********************************************************************/
 void listen_message(){
   uint8_t* message;
   uint8_t message_t = LoRa_listen(message);
@@ -80,7 +110,9 @@ void listen_message(){
       break;
   }
 }
-
+/*******************************************************************
+ * receive_RREQ_message()
+********************************************************************/
 void receive_RREQ_message(struct RREQ_message* _RREQ) {
   // check if reversed path (RREQ reverse = ACK)
   if (_RREQ->reverse_path == REVERSE_PATH ) {  // Yes
@@ -118,8 +150,8 @@ void receive_RREQ_message(struct RREQ_message* _RREQ) {
     return;
   }
   
-  // No, it's not the destination; unicastly send ack to "sender" -> hop_count++ -> update routing table -> rebroadcast
-  // TODO: UNICAST ACK TO SENDER
+  // No, it's not the destination; unicast ack to "sender" -> hop_count++ -> update routing table -> rebroadcast
+  unicast_RREQ_ACK(_RREQ);
   
   // hop_count++
   _RREQ->hop_count = _RREQ->hop_count + 1;
@@ -133,8 +165,8 @@ void receive_RREQ_message(struct RREQ_message* _RREQ) {
             if (rt_tbl[i].dest.sequence_number <= _RREQ->src.sequence_number) {  // check sequence number
               rt_tbl[i].dest.sequence_number = _RREQ->src.sequence_number;
               rt_tbl[i].hop_count = _RREQ->hop_count;
-              rt_tbl[i].nxt_h.address_high = _RREQ->sender.address_high;
-              rt_tbl[i].nxt_h.address_low = _RREQ->sender.address_low;
+              rt_tbl[i].nxt_h.address_high = _RREQ->send_from.address_high;
+              rt_tbl[i].nxt_h.address_low = _RREQ->send_from.address_low;
             }
             break;
           }
@@ -143,22 +175,26 @@ void receive_RREQ_message(struct RREQ_message* _RREQ) {
     rt_tbl[number_of_node].dest.address_high = _RREQ->dest.address_high;
     rt_tbl[number_of_node].dest.address_low = _RREQ->dest.address_low;
     rt_tbl[number_of_node].dest.sequence_number = _RREQ->dest.sequence_number;
-    rt_tbl[number_of_node].nxt_h.address_high = _RREQ->sender.address_high;
-    rt_tbl[number_of_node].nxt_h.address_low = _RREQ->sender.address_low;
+    rt_tbl[number_of_node].nxt_h.address_high = _RREQ->send_from.address_high;
+    rt_tbl[number_of_node].nxt_h.address_low = _RREQ->send_from.address_low;
     rt_tbl[number_of_node].hop_count = _RREQ->hop_count;
 
     number_of_node++;
   }
 
   // Rebroadcast Process
-  _RREQ->sender.address_high = src->address_high;
-  _RREQ->sender.address_low = src->address_low;
-  LoRa_broadcast(_RREQ);
+  _RREQ->send_from.address_high = src->address_high;
+  _RREQ->send_from.address_low = src->address_low;
+  uint8_t _message[sizeof(struct RREQ_message)];
+  memcpy(_message, _RREQ, sizeof(struct RREQ_message));
+  LoRa_broadcast(_message);
   
   return;
   
 }
-
+/*******************************************************************
+ * receive_RREP_message()
+********************************************************************/
 void receive_RREP_message() {
   
 }

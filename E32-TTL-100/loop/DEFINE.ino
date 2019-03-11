@@ -39,7 +39,7 @@ struct destination {
   uint8_t sequence_number;
 };
 
-struct sender_address {
+struct send_address {
   uint8_t address_high;
   uint8_t address_low;
 };
@@ -53,7 +53,7 @@ struct RREQ_message {
   uint8_t type;
   struct source src;         //  source address & sequence number
   struct destination dest;    //  destination address & sequence number
-  struct sender_address sender;
+  struct send_address send_from;
   uint8_t hop_count;      //  hop count
   uint8_t broadcast_id;
   uint8_t reverse_path;

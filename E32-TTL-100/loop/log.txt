@@ -1,12 +1,20 @@
 03/11/2019:
 	Received RREQ:
-		- check if reversed path (ACK)
+		- check if received reversed path (ACK): [TODO] TURN OFF TIMER, no need to wait for ACK anymore
 		- check if duplicate (received_broadcast_table[])
 		- update received_broadcast_table
 		[TODO]- check if destination -> yes, unicast RREP	
 		- check if destination -> no:
-			+ TODO: UNICAST ACK TO SENDER
+			+ UNICAST ACK TO SENDER
 			+ update routing table
 			+ rebroadcast: hop_count++; sender_address: changed
-		
+
+03/12/2019:
+	- fix LoRa_broadcast(); delete _E32_LoRa_broadcast();
+	- add api: LoRa_unicast(), unicast_RREQ_ACK()
+	- TEST: find sizeof(pointer)?
+		uint8_t* message
+		sizeof(message)?
+		--> _sizeof(uint8_t* message);
+	
 		

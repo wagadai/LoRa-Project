@@ -23,13 +23,13 @@ void test_bench() {
 void RREQ_message_test(){
   Serial.println("TEST: Testing RREQ_message_test....");
   Serial.println(sizeof(struct RREQ_message));
-  if (sizeof(struct RREQ_message) != 9) {
+  if (sizeof(struct RREQ_message) != 12) {
     Serial.println("TEST: ERROR: size of RREQ_message is not compatible");
     return;
   }
   struct RREQ_message* RREQ;
   memset(RREQ, 0, sizeof(struct RREQ_message));
-  RREQ->type = 0x73;       Serial.print(RREQ->type, HEX);
+  RREQ->type = 0x73;                  Serial.print(RREQ->type, HEX);
   RREQ->dest.address_high = 0x22;     Serial.print(RREQ->dest.address_high, HEX);
   RREQ->dest.address_low = 0x33;      Serial.print(RREQ->dest.address_low, HEX);
   RREQ->dest.sequence_number = 0x44;  Serial.print(RREQ->dest.sequence_number, HEX);
@@ -37,7 +37,10 @@ void RREQ_message_test(){
   RREQ->src.address_low = 0x66;       Serial.print(RREQ->src.address_low, HEX);
   RREQ->src.sequence_number = 0x77;   Serial.print(RREQ->src.sequence_number, HEX);
   RREQ->hop_count = 0x66;             Serial.print(RREQ->hop_count, HEX);
-  RREQ->broadcast_id = 0x88;          Serial.println(RREQ->broadcast_id, HEX);
+  RREQ->broadcast_id = 0x88;          Serial.print(RREQ->broadcast_id, HEX);
+  RREQ->reverse_path = 0xAA;          Serial.print(RREQ->reverse_path, HEX);
+  RREQ->send_from.address_high = 0xBB;Serial.print(RREQ->send_from.address_high, HEX);
+  RREQ->send_from.address_low = 0xCC; Serial.println(RREQ->send_from.address_low, HEX);
 
   // Copy another_array & RREQ to frame_to_send:
   uint8_t frame_to_send[sizeof(struct RREQ_message) + 3];
@@ -59,9 +62,26 @@ void RREQ_message_test(){
   Serial.print(RREQ->dest.address_low, HEX);
   Serial.println(RREQ->dest.sequence_number, HEX);
 
+  // Test find pointer size
+  uint8_t* message;
+  memset(message, 0, sizeof(struct RREQ_message));
+  memcpy(message, RREQ, sizeof(struct RREQ_message));
+  Serial.print("TEST: Size of pointer: ");
+  Serial.println(_sizeof(message));
+
   Serial.println("TEST: Test RREQ_message_test done!");
-  
 }
+
+int _sizeof(uint8_t* pointer_array) {
+  int _size = 0;
+  for (uint8_t i = 0; i < 100; i++ ) {
+    if (*(pointer_array + i) == 0 && *(pointer_array + i + 1) == 0) {
+      return _size;
+    }
+    _size++;
+  }
+}
+
 
 //void RREP_message_test(){
 //  Serial.println("TEST: Testing RREP_message_test....");

@@ -91,9 +91,9 @@ void _E32_LoRa_send(uint8_t *payload, uint8_t nb_byte) {
 }
 
 /*******************************************************************
- * E32_LoRa_listen()
+ * _E32_LoRa_listen()
 ********************************************************************/
-uint8_t _E32_LoRa_listen(uint8_t *message_received) {
+bool _E32_LoRa_listen(uint8_t *message_received) {
   uint8_t message_length = 0;
   
   message_length = LoraSerial.available();
@@ -106,32 +106,10 @@ uint8_t _E32_LoRa_listen(uint8_t *message_received) {
       Serial.print(*(message_received + i)); Serial.print(", ");
     }
     Serial.println("}");
-  
-    // Check type of message: RREQ, RREP, RERR, data_message?
-    switch (*message_received) {
-      case RREQ_MESSAGE_TYPE:
-        Serial.println("E32_TTL_100: Receive RREQ_message");
-        return RREQ_MESSAGE_TYPE;
-      case RREP_MESSAGE_TYPE:
-        Serial.println("E32_TTL_100: Receive RREP_message");
-        return RREP_MESSAGE_TYPE;
-      case RERR_MESSAGE_TYPE:
-        Serial.println("E32_TTL_100: Receive RERR_message");
-        return RERR_MESSAGE_TYPE;
-      case DATA_MESSAGE_TYPE:
-        Serial.println("E32_TTL_100: Receive data_message");
-        return DATA_MESSAGE_TYPE;
-//      case ACK_MESSAGE_TYPE:
-//        Seria.println("E32_TTL_100: Receive ack_message");
-//        return ACK_MESSAGE_TYPE;
-      default:
-        Serial.println("E32_TTL_100: ERROR");
-        return 0x00;
-    }
+    return true;
   }
-  return 0x00; // NOT RECEIVE ANY PACKET
+  return false;
 }
-
 /*******************************************************************
  * __read_AUX()
 ********************************************************************/
@@ -162,33 +140,62 @@ int __wait_AUX_high() {
   return ret_var;
 }
 
-/*******************************************************************
- * _E32_LoRa_send_broadcast()
-********************************************************************/
-void _E32_LoRa_send_broadcast(struct RREQ_message* RREQ) {
-  uint8_t broadcast_addr[3] = {0xFF, 0xFF, CHANNEL};
-  uint8_t frame_to_send[sizeof(struct RREQ_message) + sizeof(broadcast_addr)];
-  
-  memcpy(frame_to_send, broadcast_addr, sizeof(broadcast_addr));
-  memcpy(frame_to_send + sizeof(broadcast_addr), RREQ, sizeof(struct RREQ_message));
-  LoraSerial.write(frame_to_send, sizeof(frame_to_send));
-  delay(10);
-}
-
 //==================================================================//
 //====================== PUBLIC FUNCTIONS =========================*/
 //==================================================================//
 /*******************************************************************
  * LoRa_broadcast()
 ********************************************************************/
-void LoRa_broadcast(struct RREQ_message* RREQ) {
-  Serial.println("E32_TTL_100: Sending broadcast RREQ_message.....");
-  _E32_LoRa_send_broadcast(RREQ);
-  Serial.println("E32_TTL_100: RREQ_message has been sent!");
+void LoRa_broadcast(uint8_t *message) {
+  Serial.println("E32_TTL_100: Sending broadcast message.....");
+  uint8_t broadcast_addr[3] = {0xFF, 0xFF, CHANNEL};
+  uint8_t frame_to_send[_sizeof(message) + sizeof(broadcast_addr)];  //TODO: test
+  
+  memcpy(frame_to_send, broadcast_addr, sizeof(broadcast_addr));
+  memcpy(frame_to_send + sizeof(broadcast_addr), message, _sizeof(message));
+  LoraSerial.write(frame_to_send, sizeof(frame_to_send));
+  Serial.println("E32_TTL_100: broadcast message has been sent!");
+}
+/*******************************************************************
+ * LoRa_unicast()
+********************************************************************/
+void LoRa_unicast(struct send_address* send_to, uint8_t* message) {
+  Serial.println("E32_TTL_100: Sending unicast message.....");
+  uint8_t channel = CHANNEL;
+  uint8_t frame_to_send[sizeof(send_address) + _sizeof(message)];
+
+  memcpy(frame_to_send, send_to, sizeof(send_address));
+  memcpy(frame_to_send + sizeof(send_address), channel, sizeof(channel));
+  memcpy(frame_to_send + sizeof(send_address) + sizeof(channel), message, _sizeof(message));
+  LoraSerial.write(frame_to_send, sizeof(frame_to_send));
+  Serial.println("E32_TTL_100: unicast message has been sent!");
 }
 /*******************************************************************
  * LoRa_listen()
 ********************************************************************/
 uint8_t LoRa_listen(uint8_t *message) {
-  return _E32_LoRa_listen(message);
+  if (_E32_LoRa_listen(message) == true) {
+  // Check type of message: RREQ, RREP, RERR, data_message?
+    switch (*message) {
+      case RREQ_MESSAGE_TYPE:
+        Serial.println("E32_TTL_100: Receive RREQ_message");
+        return RREQ_MESSAGE_TYPE;
+      case RREP_MESSAGE_TYPE:
+        Serial.println("E32_TTL_100: Receive RREP_message");
+        return RREP_MESSAGE_TYPE;
+      case RERR_MESSAGE_TYPE:
+        Serial.println("E32_TTL_100: Receive RERR_message");
+        return RERR_MESSAGE_TYPE;
+      case DATA_MESSAGE_TYPE:
+        Serial.println("E32_TTL_100: Receive data_message");
+        return DATA_MESSAGE_TYPE;
+//      case ACK_MESSAGE_TYPE:
+//        Seria.println("E32_TTL_100: Receive ack_message");
+//        return ACK_MESSAGE_TYPE;
+      default:
+        Serial.println("E32_TTL_100: ERROR");
+        return 0x00;
+    }
+  }
+  return 0x00; // NOT RECEIVE ANY PACKET
 }
