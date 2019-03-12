@@ -65,7 +65,9 @@ struct RREP_message {
   uint8_t type;
   struct source src; 
   struct destination dest;
+  struct send_address send_from;
   uint8_t hop_count; 
+  uint8_t reverse_path;
 };
 
 struct RERR_message {

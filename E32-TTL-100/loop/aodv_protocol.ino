@@ -14,6 +14,7 @@ struct routing_table rt_tbl[10];
 uint8_t number_of_node = 0;
 
 struct received_broadcast_message received_broadcast_table[10];
+uint8_t number_of_node_in_broadcast_table = 0;
 
 /*******************************************************************
  * aodv_protocol()
@@ -58,12 +59,11 @@ void broadcast_RREQ(struct destination* dest) {
 /*******************************************************************
  * unicast_RREQ_ACK(): reversed_path
 ********************************************************************/
-void unicast_RREQ_ACK(struct RREQ_message* _RREQ) {
+void unicast_RREQ_ACK(struct send_address* send_to, struct RREQ_message* _RREQ) {
   Serial.print("AODV_PROTOCOL: Unicasting RREQ_ACK message to: ");
+  Serial.print(send_to->address_high);
+  Serial.println(send_to->address_low);
   _RREQ->reverse_path = REVERSE_PATH;
-  struct send_address* send_to;
-  send_to->address_high = _RREQ->send_from.address_high;  Serial.print(send_to->address_high, HEX);
-  send_to->address_low = _RREQ->send_from.address_low;    Serial.println(send_to->address_low, HEX);
 
   // convert struct to array
   uint8_t _message[sizeof(struct RREQ_message)];
@@ -74,8 +74,28 @@ void unicast_RREQ_ACK(struct RREQ_message* _RREQ) {
 /*******************************************************************
  * unicast_RREP()
 ********************************************************************/
-void unicast_RREP() {
-  // TODO
+void unicast_RREP(struct send_address* send_to, struct RREP_message* _RREP, uint8_t is_ACK = 0x00) {
+  if (is_ACK){
+    Serial.print("AODV_PROTOCOL: Unicasting RREP_ACK message to: ");
+    Serial.print(send_to->address_high);
+    Serial.println(send_to->address_low);
+    _RREP->reverse_path = REVERSE_PATH;
+  }
+  else {
+    Serial.print("AODV_PROTOCOL: Unicasting RREP message to: ");
+    Serial.print(send_to->address_high);
+    Serial.println(send_to->address_low);
+  }
+
+  // convert struct to array
+  uint8_t _message[sizeof(struct RREP_message)];
+  memcpy(_message, _RREP, sizeof(struct RREP_message));
+  LoRa_unicast(send_to, _message);
+  Serial.println("AODV_PROTOCOL: Unicast RREP message DONE! ");
+
+  if (is_ACK){}
+  // wait for RREP/ ACK
+  else listen_message();
 }
 /*******************************************************************
  * listen_message()
@@ -84,17 +104,18 @@ void listen_message(){
   uint8_t* message;
   uint8_t message_t = LoRa_listen(message);
   switch (message_t) {
-    case RREQ_MESSAGE_TYPE:
-      // receive RREQ_message
+    case RREQ_MESSAGE_TYPE: // receive RREQ_message
+      
       struct RREQ_message* _RREQ;
       // convert array to struct
       memcpy(_RREQ, message, sizeof(message));
       receive_RREQ_message(_RREQ);
       break;
-    case RREP_MESSAGE_TYPE:
-      // receive RREP_message
-      
-//        receive_RREP_message(message);
+    case RREP_MESSAGE_TYPE: // receive RREP_message
+      // convert array to struct
+      struct RREP_message* _RREP;
+      memcpy(_RREP, message, sizeof(message));
+      receive_RREP_message(message);
       break;
     case RERR_MESSAGE_TYPE:
       // receive RREP_message
@@ -121,7 +142,7 @@ void receive_RREQ_message(struct RREQ_message* _RREQ) {
   }
   // check if duplicate RREQ? Based on Source address & broadcast_id
   bool destination_exist_in_broadcast_table = false;
-  for (int i=0; i<number_of_node; i++) {
+  for (int i=0; i<number_of_node_in_broadcast_table; i++) {
     if (received_broadcast_table[i].src.address_high == _RREQ->src.address_high &&
           received_broadcast_table[i].src.address_low == _RREQ->src.address_low ) {
             destination_exist_in_broadcast_table = true;
@@ -137,21 +158,16 @@ void receive_RREQ_message(struct RREQ_message* _RREQ) {
           }
   }
   if (destination_exist_in_broadcast_table == false) {  // add new
-    received_broadcast_table[number_of_node].src.address_high = _RREQ->src.address_high;
-    received_broadcast_table[number_of_node].src.address_low = _RREQ->src.address_low;
-    received_broadcast_table[number_of_node].broadcast_id = _RREQ->broadcast_id;
+    received_broadcast_table[number_of_node_in_broadcast_table].src.address_high = _RREQ->src.address_high;
+    received_broadcast_table[number_of_node_in_broadcast_table].src.address_low = _RREQ->src.address_low;
+    received_broadcast_table[number_of_node_in_broadcast_table].broadcast_id = _RREQ->broadcast_id;
   }
   
-  // check if destination?
-  if (_RREQ->dest.address_high == src->address_high && _RREQ->dest.address_low == src->address_low) {
-    // Yes, it is the destination
-    // TODO: UNICASTLY SEND RREP TO SOURCE (BASED ON HOP, LAST SENDER)
-    
-    return;
-  }
-  
-  // No, it's not the destination; unicast ack to "sender" -> hop_count++ -> update routing table -> rebroadcast
-  unicast_RREQ_ACK(_RREQ);
+  // unicast ack to "sender" -> hop_count++ -> update routing table -> check if destination?
+  struct send_address* _send_to;
+  _send_to->address_high = _RREQ->send_from.address_high;
+  _send_to->address_low = _RREQ->send_from.address_low;
+  unicast_RREQ_ACK(_send_to, _RREQ);
   
   // hop_count++
   _RREQ->hop_count = _RREQ->hop_count + 1;
@@ -182,7 +198,35 @@ void receive_RREQ_message(struct RREQ_message* _RREQ) {
     number_of_node++;
   }
 
-  // Rebroadcast Process
+  // check if destination?
+  if (_RREQ->dest.address_high == src->address_high && _RREQ->dest.address_low == src->address_low) {
+    // Yes, it is the destination
+    // UNICASTLY SEND RREP TO SOURCE
+    // prepare RREP_message
+    struct RREP_message* _RREP;
+    _RREP->type = RREP_MESSAGE_TYPE;
+    _RREP->dest.address_high = _RREQ->dest.address_high;
+    _RREP->dest.address_low = _RREQ->dest.address_low;
+    _RREP->dest.sequence_number = _RREQ->dest.sequence_number;
+    _RREP->src.address_high = src->address_high;
+    _RREP->src.address_low = src->address_low;
+    _RREP->src.sequence_number = src->sequence_number;
+    _RREP->hop_count = 0;
+    _RREP->reverse_path = 0x00;
+    _RREP->send_from.address_high = src->address_high;
+    _RREP->send_from.address_low = src->address_low;
+
+    struct send_address* _send_to;
+    _send_to->address_high = _RREQ->send_from.address_high;
+    _send_to->address_low = _RREQ->send_from.address_low;
+    
+    // unicast RREP_message
+    unicast_RREP(_send_to ,_RREP);
+    
+    return;
+  }
+  
+  // No, it is not the destination, Rebroadcast Process
   _RREQ->send_from.address_high = src->address_high;
   _RREQ->send_from.address_low = src->address_low;
   uint8_t _message[sizeof(struct RREQ_message)];
@@ -195,14 +239,18 @@ void receive_RREQ_message(struct RREQ_message* _RREQ) {
 /*******************************************************************
  * receive_RREP_message()
 ********************************************************************/
-void receive_RREP_message() {
+void receive_RREP_message(struct RREP_message* _RREP) {
   
 }
-
+/*******************************************************************
+ * receive_RERR_message()
+********************************************************************/
 void receive_RERR_message() {
   
 }
-
+/*******************************************************************
+ * receive_data_message()
+********************************************************************/
 void receive_data_message() {
   
 }

@@ -16,5 +16,8 @@
 		uint8_t* message
 		sizeof(message)?
 		--> _sizeof(uint8_t* message);
+	- change position of: check destination
+	- unicast RREP to source: if received_broadcast: its address == RREQ.dest_address
+	- [TODO] if received RREP_message
 	
 		
