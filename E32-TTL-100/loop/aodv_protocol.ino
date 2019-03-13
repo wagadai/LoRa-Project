@@ -20,21 +20,25 @@ uint8_t number_of_node_in_broadcast_table = 0;
  * aodv_protocol()
 ********************************************************************/
 void aodv_protocol(){
-  Serial.println("aodv_protocol");
-
+  Serial.println(F("AODV_PROTOCOL: Implementation...."));
+  
   // ROUTE DISCOVERY:
+  Serial.println(F("AODV_PROTOCOL: ROUTE DISCOVERY"));
   // Broadcast RREQ_message to node 1
   struct destination *node_1;
   node_1->address_high = 0x00;
   node_1->address_low = 0x01;
   broadcast_RREQ(node_1);
+  
   // if receive RREQ_message: rebroadcast, update routing table; unicast RREP
+    // wait for RREP/ ACK
+  listen_message();
 }
 /*******************************************************************
  * broadcast_RREQ()
 ********************************************************************/
 void broadcast_RREQ(struct destination* dest) {
-  Serial.println("AODV_PROTOCOL: Sending RREQ_broadcast message.....");
+  Serial.println(F("AODV_PROTOCOL: Sending RREQ_broadcast message....."));
   // unknown sequence_number of destination: NaN = 255;
   dest->sequence_number = 255;
 
@@ -51,16 +55,13 @@ void broadcast_RREQ(struct destination* dest) {
   
   // broadcast RREQ_message
   LoRa_broadcast(_message);
-  Serial.println("AODV_PROTOCOL: broadcast RREQ_broadcast message has been sent!");
-  
-  // wait for RREP/ ACK
-  listen_message();
+  Serial.println(F("AODV_PROTOCOL: broadcast RREQ_broadcast message has been sent!"));
 }
 /*******************************************************************
  * unicast_RREQ_ACK(): reversed_path
 ********************************************************************/
 void unicast_RREQ_ACK(struct send_address* send_to, struct RREQ_message* _RREQ) {
-  Serial.print("AODV_PROTOCOL: Unicasting RREQ_ACK message to: ");
+  Serial.print(F("AODV_PROTOCOL: Unicasting RREQ_ACK message to: "));
   Serial.print(send_to->address_high);
   Serial.println(send_to->address_low);
   _RREQ->reverse_path = REVERSE_PATH;
@@ -69,20 +70,20 @@ void unicast_RREQ_ACK(struct send_address* send_to, struct RREQ_message* _RREQ) 
   uint8_t _message[sizeof(struct RREQ_message)];
   memcpy(_message, _RREQ, sizeof(struct RREQ_message));
   LoRa_unicast(send_to, _message);
-  Serial.println("AODV_PROTOCOL: Unicast RREQ_ACK message DONE! ");
+  Serial.println(F("AODV_PROTOCOL: Unicast RREQ_ACK message DONE! "));
 }
 /*******************************************************************
  * unicast_RREP()
 ********************************************************************/
 void unicast_RREP(struct send_address* send_to, struct RREP_message* _RREP, uint8_t is_ACK = 0x00) {
   if (is_ACK){
-    Serial.print("AODV_PROTOCOL: Unicasting RREP_ACK message to: ");
+    Serial.print(F("AODV_PROTOCOL: Unicasting RREP_ACK message to: "));
     Serial.print(send_to->address_high);
     Serial.println(send_to->address_low);
     _RREP->reverse_path = REVERSE_PATH;
   }
   else {
-    Serial.print("AODV_PROTOCOL: Unicasting RREP message to: ");
+    Serial.print(F("AODV_PROTOCOL: Unicasting RREP message to: "));
     Serial.print(send_to->address_high);
     Serial.println(send_to->address_low);
   }
@@ -91,7 +92,7 @@ void unicast_RREP(struct send_address* send_to, struct RREP_message* _RREP, uint
   uint8_t _message[sizeof(struct RREP_message)];
   memcpy(_message, _RREP, sizeof(struct RREP_message));
   LoRa_unicast(send_to, _message);
-  Serial.println("AODV_PROTOCOL: Unicast RREP message DONE! ");
+  Serial.println(F("AODV_PROTOCOL: Unicast RREP message DONE! "));
 
   if (is_ACK){}
   // wait for RREP/ ACK
@@ -100,7 +101,7 @@ void unicast_RREP(struct send_address* send_to, struct RREP_message* _RREP, uint
 /*******************************************************************
  * listen_message()
 ********************************************************************/
-void listen_message(){
+uint8_t listen_message(){
   uint8_t* message;
   uint8_t message_t = LoRa_listen(message);
   switch (message_t) {
@@ -110,26 +111,29 @@ void listen_message(){
       // convert array to struct
       memcpy(_RREQ, message, sizeof(message));
       receive_RREQ_message(_RREQ);
-      break;
+      return RREQ_MESSAGE_TYPE;
     case RREP_MESSAGE_TYPE: // receive RREP_message
       // convert array to struct
       struct RREP_message* _RREP;
       memcpy(_RREP, message, sizeof(message));
       receive_RREP_message(_RREP);
-      break;
+      return RREP_MESSAGE_TYPE;
     case RERR_MESSAGE_TYPE:
       // receive RREP_message
 //      receive_RERR_message(message);
-      break;
+      return RERR_MESSAGE_TYPE;
     case DATA_MESSAGE_TYPE:
       // receive data_message
 //      receive_data_message(message);
+        return DATA_MESSAGE_TYPE;
     case ACK_MESSAGE_TYPE:
 //      received_ack_message(message);
+        return ACK_MESSAGE_TYPE;
     default:
       // not receive any packet
-      break;
+      return 0x00;
   }
+  
 }
 /*******************************************************************
  * receive_RREQ_message()
@@ -346,7 +350,7 @@ void receive_RREP_message(struct RREP_message* _RREP) {
 ********************************************************************/
 void wait_for_ACK_timeout() {
   // TODO: IF NOT RECEIVE ack, SHOULD DO SOMETHING!
-  Serial.println("AODV_PROTOCOL: ACK Timeout!");
+  Serial.println(F("AODV_PROTOCOL: ACK Timeout!"));
 }
 /*******************************************************************
  * receive_RERR_message()

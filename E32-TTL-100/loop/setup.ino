@@ -10,7 +10,8 @@ void setup(){
 //  src->address_high = 0xAA;
 //  src->address_low = 0xBB;
 //  src->sequence_number = 0;
-//  aodv_protocol();
+  _E32_LoRa_setup();  
+  aodv_protocol();
 
 
 }

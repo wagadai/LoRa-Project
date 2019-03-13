@@ -28,10 +28,10 @@ void test_bench() {
  * MESSAGE
 ********************************************************************/
 void RREQ_message_test(){
-  Serial.println("TEST: Testing RREQ_message_test....");
-  Serial.println(sizeof(struct RREQ_message));
+  Serial.println(F("TEST: Testing RREQ_message_test...."));
+//  Serial.println(F(sizeof(struct RREQ_message)));
   if (sizeof(struct RREQ_message) != 12) {
-    Serial.println("TEST: ERROR: size of RREQ_message is not compatible");
+    Serial.println(F("TEST: ERROR: size of RREQ_message is not compatible"));
     return;
   }
   struct RREQ_message* RREQ;
@@ -54,7 +54,7 @@ void RREQ_message_test(){
   uint8_t another_array[] = {0xAA, 0xBB, 0xCC};
   memcpy(frame_to_send, another_array, sizeof(another_array));
   memcpy(frame_to_send + sizeof(another_array), RREQ, sizeof(struct RREQ_message));
-  Serial.print("TEST: frame_to_send:");
+  Serial.print(F("TEST: frame_to_send:"));
   Serial.println(frame_to_send[4], HEX);
 
   // Test copy 2 same-type struct
@@ -73,10 +73,10 @@ void RREQ_message_test(){
   uint8_t* message;
   memset(message, 0, sizeof(struct RREQ_message));
   memcpy(message, RREQ, sizeof(struct RREQ_message));
-  Serial.print("TEST: Size of pointer: ");
+  Serial.print(F("TEST: Size of pointer: "));
   Serial.println(_sizeof(message));
 
-  Serial.println("TEST: Test RREQ_message_test done!");
+  Serial.println(F("TEST: Test RREQ_message_test done!"));
 }
 
 int _sizeof(uint8_t* pointer_array) {
@@ -134,26 +134,26 @@ int _sizeof(uint8_t* pointer_array) {
  * E32_TTL_100 LORA
 ********************************************************************/
 void _E32_LoRa_setup_test() {
-  Serial.println("TEST: Testing _E32_LoRa_setup_test....");
+  Serial.println(F("TEST: Testing _E32_LoRa_setup_test...."));
   if (_E32_LoRa_setup()) {
-    Serial.println("TEST: _E32_LoRa_setup_test OK!");
+    Serial.println(F("TEST: _E32_LoRa_setup_test OK!"));
     return;
   }
-  Serial.println("TEST: _E32_LoRa_setup_test ERROR!");
+  Serial.println(F("TEST: _E32_LoRa_setup_test ERROR!"));
 }
 
 void _E32_LoRa_send_test() {
-  Serial.println("TEST: Testing _E32_LoRa_send_test....");
+  Serial.println(F("TEST: Testing _E32_LoRa_send_test...."));
   
 }
 
 void _E32_LoRa_listen_test() {
-  Serial.println("TEST: Testing E32_LoRa_listen_test....");
+  Serial.println(F("TEST: Testing E32_LoRa_listen_test...."));
   
 }
 
 void E32_LoRa_fetch_test() {
-  Serial.println("TEST: Testing _E32_LoRa_fetch_test....");
+  Serial.println(F("TEST: Testing _E32_LoRa_fetch_test...."));
   
 }
 
@@ -161,7 +161,7 @@ void E32_LoRa_fetch_test() {
  * Timer
 ********************************************************************/
 void start_timer_test() {
-  Serial.println("TEST: start_timer_test");
+  Serial.println(F("TEST: start_timer_test"));
   Timer1.initialize(8000000); //The led will blink in a half second time interval
   Timer1.attachInterrupt(wait_for_ACK_timeout);
 }
