@@ -78,19 +78,6 @@ bool _E32_LoRa_setup() {
   return false;
 }
 /*******************************************************************
- * _E32_LoRa_send()
-********************************************************************/
-void _E32_LoRa_send(uint8_t *payload, uint8_t nb_byte) {
-    // uint8_t FrameSend[8] = {GW_AddressH, GW_AddressL, GW_Channel, NODE_AddressH, NODE_AddressL, 0x01, 0x02, 0x03};
-//    LoraSerial.write(payload, nb_byte);
-//    #ifdef DEBUG_SERIAL
-//    Serial.println("Data hasbeen sent!");
-//    #endif // DEBUG_SERIAL
-//    ledToggle(1, true, false, 500);
-//    delay(10);
-}
-
-/*******************************************************************
  * _E32_LoRa_listen()
 ********************************************************************/
 bool _E32_LoRa_listen(uint8_t *message_received) {

@@ -16,6 +16,13 @@ void test_bench() {
   _E32_LoRa_listen_test();
   _E32_LoRa_fetch_test();
   #endif
+
+  #ifdef TIMER_TEST
+  Timer1.stop();
+  start_timer_test(); // start timer
+  delay(5000);
+  Timer1.stop();  // after 5s stop timer
+  #endif
 }
 /*******************************************************************
  * MESSAGE
@@ -148,6 +155,15 @@ void _E32_LoRa_listen_test() {
 void E32_LoRa_fetch_test() {
   Serial.println("TEST: Testing _E32_LoRa_fetch_test....");
   
+}
+
+/*******************************************************************
+ * Timer
+********************************************************************/
+void start_timer_test() {
+  Serial.println("TEST: start_timer_test");
+  Timer1.initialize(8000000); //The led will blink in a half second time interval
+  Timer1.attachInterrupt(wait_for_ACK_timeout);
 }
 /*******************************************************************
  * EOF

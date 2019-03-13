@@ -20,4 +20,17 @@
 	- unicast RREP to source: if received_broadcast: its address == RREQ.dest_address
 	- [TODO] if received RREP_message
 	
+03/13/2019:
+	- fix: increment sequence_number if unicast RREP_message, searching in routing_table
+	- if received RREP_message:
+		+ check if reversed_path (ACK): Yes-> TURN OFF TIMER, no need to wait for ACK anymore. 
+		+ No-> unicast reversed_path (ACK) to send_from
+		+ hop_count++
+		+ update routing_table: check if exist in table: Yes-> update sequence_number (if >); No-> add new in routing_table
+		+ Check if destination? If yes, do nothing
+		+ If no, search in routing_table for next_hop to destination -> unicast RREP to next_hop -> wait for ACK
+	- after receiving RREQ, if dest exists in routing_table -> forward to source
+	- TEST: start/ stop timer
+	- Turn off timer if received ACK; Continue to listen if receive NO ACK
+	
 		
